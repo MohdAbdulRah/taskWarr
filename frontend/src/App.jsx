@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import SignUp from './pages/SignUp';
 import Layout from './components/Layout';
 import SignIn from './pages/SignIn';
+import Notifications from './pages/Notifications';
 import Profile from "./pages/Profile"
 import ProtectedRoute from './components/ProtectedRoute';
 import BetDetailsPage from './pages/BetDetailsPage';
@@ -24,6 +25,14 @@ const App = () => {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="notifications"
+          element = {
+            <ProtectedRoute>
+              <Notifications/>
             </ProtectedRoute>
           }
         />

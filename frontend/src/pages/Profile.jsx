@@ -52,7 +52,7 @@ const Profile = () => {
             transition={{ delay: i * 0.05 }}
             key={i}
             onClick={() => navigate(`/bet/${bet._id}`)}
-            className="rounded-2xl p-5 bg-white/30 backdrop-blur-md shadow-xl border border-white/40 hover:scale-[1.03] transition-all"
+            className="rounded-2xl p-5 bg-white/80 backdrop-blur-md shadow-xl border border-white/40 hover:scale-[1.03] transition-all"
           >
             <h3 className="text-xl font-bold text-indigo-700">{bet.title}</h3>
             <p className="text-gray-700 mt-2">Amount: ₹{bet.amount}</p>
@@ -92,94 +92,111 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-[#e0c3fc] via-[#8ec5fc] to-[#a9f1df] p-4">
-      <Toaster position="top-right" richColors />
-      <div className="max-w-6xl mx-auto mt-10 bg-white/20 backdrop-blur-lg rounded-3xl shadow-2xl p-8 md:p-12 border border-white/30">
-       
-      <div className="flex justify-between items-start mb-8">
-  {/* Username & details */}
-  <div className="text-center mx-auto">
-    <h1 className="text-4xl font-extrabold text-purple-800 drop-shadow-md">{user.username}</h1>
-    <p className="text-md text-gray-700 mt-2">
-      Email: <span className="font-semibold">{user.email}</span>
-    </p>
-    <p className="text-md text-gray-700">
-      Balance: ₹<span className="font-semibold">{user.balance}</span>
-    </p>
-  </div>
+    <div className="relative min-h-screen overflow-hidden">
+  {/* 🔹 Futuristic background */}
+  <div
+    className="absolute inset-0 bg-cover bg-center filter blur-sm scale-105"
+    style={{
+      backgroundImage:
+        "url('/images/profilebg.jpg')", // apni profile ke liye ek cool gradient / abstract wallpaper
+    }}
+  />
 
-  {/* Failed Tasks Button */}
-  <button
-    className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm md:text-md shadow-md transition-all
-      ${
-        failedTaskLoading
-          ? "bg-gray-400/60 text-white cursor-not-allowed"
-          : "bg-gradient-to-r from-pink-400 to-red-500 text-white hover:scale-105 hover:shadow-lg"
-      }`}
-    onClick={checkFailedTasks}
-    disabled={failedTaskLoading}
-  >
-    {failedTaskLoading ? (
-      <>
-        <svg
-          className="animate-spin h-5 w-5 text-white"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          ></circle>
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8v8H4z"
-          ></path>
-        </svg>
-        Checking...
-      </>
-    ) : (
-      "Failed Tasks"
-    )}
-  </button>
-</div>
-          
+  {/* 🔸 Dark overlay */}
+  <div className="absolute inset-0 bg-black/50" />
 
-        
-        {/* Tab buttons */}
-        <div className="flex flex-wrap justify-center gap-4 mb-10">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-5 py-2.5 rounded-full font-semibold text-md transition duration-300 shadow-md
-                ${
-                  activeTab === tab.key
-                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white scale-105"
-                    : "bg-white/50 text-gray-800 hover:bg-purple-100"
-                }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+  {/* 🔸 Main content */}
+  <div className="relative z-10 p-4">
+    <Toaster position="top-right" richColors />
+
+    <div className="max-w-6xl mx-auto mt-12 bg-white/20 backdrop-blur-xl rounded-3xl shadow-[0_8px_40px_rgba(0,0,0,0.4)] p-8 md:p-12 border border-white/30">
+      {/* 🔹 Top Section */}
+      <div className="flex justify-between items-start mb-10">
+        {/* Username & details */}
+        <div className="text-center mx-auto">
+          <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-500 drop-shadow-md">
+            {user.username}
+          </h1>
+          <p className="text-md text-gray-100 mt-2">
+            Email: <span className="font-semibold">{user.email}</span>
+          </p>
+          <p className="text-md text-yellow-400 ">
+            Balance: ₹<span className="font-semibold">{user.balance}</span>
+          </p>
         </div>
 
-        {/* Bets Content */}
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
+        {/* Failed Tasks Button */}
+        <button
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm md:text-md shadow-md transition-all
+          ${
+            failedTaskLoading
+              ? "bg-gray-400/60 text-white cursor-not-allowed"
+              : "bg-gradient-to-r from-pink-500 to-red-600 text-white hover:scale-105 hover:shadow-lg"
+          }`}
+          onClick={checkFailedTasks}
+          disabled={failedTaskLoading}
         >
-          {renderBets(user[activeTab])}
-        </motion.div>
+          {failedTaskLoading ? (
+            <>
+              <svg
+                className="animate-spin h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v8H4z"
+                ></path>
+              </svg>
+              Checking...
+            </>
+          ) : (
+            "Failed Tasks"
+          )}
+        </button>
       </div>
+
+      {/* 🔹 Tab buttons */}
+      <div className="flex flex-wrap justify-center gap-4 mb-10">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-6 py-2.5 rounded-full font-semibold text-md transition duration-300 shadow-md
+              ${
+                activeTab === tab.key
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white scale-105 shadow-[0_4px_20px_rgba(99,102,241,0.6)]"
+                  : "bg-white/80 text-gray-900 hover:bg-purple-100"
+              }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 🔹 Bets Content */}
+      <motion.div
+        key={activeTab}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        {renderBets(user[activeTab])}
+      </motion.div>
     </div>
+  </div>
+</div>
+
   );
 };
 

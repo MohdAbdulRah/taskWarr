@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 require('dotenv').config()
 const Bet = require("./Models/betSchema.js");
 const User = require("./Models/userSchema.js");
+const Notification = require("./Models/notificationSchema.js");
 const mongodb = process.env.MONGO_DB;
 const cors = require('cors');
 
@@ -12,7 +13,8 @@ const flash = require("connect-flash")
 const passport = require("passport")
 const LocalStratergy = require("passport-local")
 
-const {isAuthenticated} = require("./Middleware/middlewares.js")
+const {isAuthenticated} = require("./Middleware/middlewares.js");
+const { forEach } = require('mongoose/lib/helpers/specialProperties.js');
 
 main()
 .then(() => {
@@ -108,18 +110,24 @@ app.post("/task/bet",isAuthenticated,async (req,res) => {
          return res.status(400).json({message : `Cannot Create a Task of ${amount} more than your user balance ${req.user.balance}`,success : false});
        }
        const Task = new Bet({
-        creator_id : req.user,
-        acceptor_id,
-        title,
-        description,
-        amount,
-        original_amount : amount,
-        deadline
+           creator_id : req.user,
+           acceptor_id,
+           title,
+           description,
+           amount,
+           original_amount : amount,
+           deadline
+        })
+        await Task.save();
+        const notification = new Notification({
+         message : `Task ${Task.title} has been created with amount Rs.${Task.amount}`,
+         gettime : Date.now() 
        })
-       await Task.save();
+        await notification.save();
 
        const user = req.user;
        user.balance = user.balance - amount;
+       user.notifications.push(notification)
        console.log(Task.id);
        user.betsgave.push(new mongoose.Types.ObjectId(Task.id));
        await user.save();
@@ -166,7 +174,13 @@ app.get("/task/accept/:taskid",isAuthenticated,async (req,res) => {
         if(Task.status == 'failed'){
             return res.status(400).json({message :"This task deadline is over you cant accept this task",success : false});
         }
+        const notification = new Notification({
+            message :`Task ${Task.title} has been Accepted of Amount Rs.${Task.original_amount}`,
+            gettime : Date.now() 
+        })
+        await notification.save();
         user.betstaken.push(new mongoose.Types.ObjectId(Task.id));
+        user.notifications.push(notification)
         user.balance = user.balance - Task.amount;
         await user.save();
 
@@ -175,7 +189,17 @@ app.get("/task/accept/:taskid",isAuthenticated,async (req,res) => {
         Task.amount = Task.amount * 2;
         await Task.save();
 
-        
+        const creatorUser = await User.findOne({
+            _id : Task.creator_id
+        })
+        const notification1 = new Notification({
+            message :`Your Task ${Task.title} of amount Rs.${Task.original_amount} has been accepted By @${user.username}`,
+            gettime : Date.now() 
+        })
+        await notification1.save();
+        creatorUser.notifications.push(notification1)
+
+        await creatorUser.save();
        
        
        res.status(200).json({message : "Accepted the Task",success : true,task : Task});
@@ -192,7 +216,7 @@ app.get("/task/refund/:taskid",isAuthenticated,async (req,res) => {
             status: "failed",
             _id : new mongoose.Types.ObjectId(taskid)
         });
-        console.log(failedTasks);
+        // console.log(failedTasks);
         if(!failedTasks){
             return res.status(400).json({message : "Task Either not Exists or it is not failed",success : false});
         }
@@ -200,7 +224,13 @@ app.get("/task/refund/:taskid",isAuthenticated,async (req,res) => {
         if(failedTasks.creator_id.toString() !== req.user._id.toString()){
             return res.status(400).json({message : "You are not the owner of this task",success : false});
         }
-
+        const notification = new Notification({
+            message :`Task ${failedTasks.title} of Amount Rs.${failedTasks.original_amount} has been refunded to your Account`,
+            gettime : Date.now() 
+        })
+        await notification.save();
+        
+        user.notifications.push(notification)
         user.balance += failedTasks.amount;
         await user.save();
 
@@ -246,11 +276,29 @@ app.post("/task/done/:taskid",isAuthenticated,async (req,res) => {
         Task.amount = Task.amount/2;
         await Task.save();
 
+        const notification = new Notification({
+            message :`Task ${Task.title} has been Done by You and Your Amount rs.${Task.original_amount} Associated with this task has been added to your account and the remaining will be added once the creator verifies your work`,
+            gettime : Date.now() 
+        })
+        await notification.save();
+
         const user = await User.findOne({_id: new mongoose.Types.ObjectId(req.user._id)})
         user.betsdone.push(new mongoose.Types.ObjectId(Task.id));
         user.balance = user.balance + Task.amount;
+        user.notifications.push(notification)
         await user.save();
 
+
+        const notification1 = new Notification({
+            message :`Your Task ${Task.title} has been Done By @${user.username} Please Verify The User work`,
+            gettime : Date.now() 
+        })
+        await notification1.save();
+        const creatorUser = await User.findOne({
+            _id : Task.creator_id
+        })
+        creatorUser.notifications.push(notification1)
+        await creatorUser.save();
         return res.status(200).json({message : "Task Completed",success : true,task : Task});
     }
     catch(error){
@@ -274,6 +322,7 @@ app.get("/task/verify/:taskid",async (req,res) => {
         if(Task.creator_id.toString() !== req.user._id.toString()){
             return res.status(400).json({message : "You are not the owner of this task",success : false});
         }
+        
 
         const completor = await User.findOne({_id : new mongoose.Types.ObjectId(Task.acceptor_id.id)})
         completor.balance += Task.amount;
@@ -281,9 +330,24 @@ app.get("/task/verify/:taskid",async (req,res) => {
         Task.winner = completor;
         completor.betsWinner.push(new mongoose.Types.ObjectId(Task.id));
         Task.status = 'success';
+
+        const notification = new Notification({
+            message :`Amount Associated with your Task ${Task.title} has been recieved by @${completor.username}`,
+            gettime : Date.now() 
+        })
+        await notification.save();
+        const notification1 = new Notification({
+            message :`Hurray Task ${Task.title} which has been completed by you Is Right and is verified by the user @${user.username} and the Task Amount ${Task.original_amount} has been funded to your account`,
+            gettime : Date.now() 
+        })
+        await notification1.save();
+
+
+        user.notifications.push(notification)
+        completor.notifications.push(notification1)
         await Task.save();
         await completor.save();
-       
+       await user.save();
 
         res.status(200).json({message : "Successfully Done the task",success : true,task : Task});
 
@@ -303,6 +367,7 @@ app.get("/task/unverify/:taskid",async (req,res) => {
         if(Task == null){
             return res.status(400).json({message : "Still the Task is not completed",success : false});
         }
+        const completor = await User.findOne({_id : new mongoose.Types.ObjectId(Task.acceptor_id.id)})
         const user = await User.findOne({_id: new mongoose.Types.ObjectId(req.user._id)})
 
         if(Task.creator_id.toString() !== req.user._id.toString()){
@@ -312,9 +377,23 @@ app.get("/task/unverify/:taskid",async (req,res) => {
         user.balance += Task.amount;        
         Task.amount = 0;
         Task.status = 'refunded';
+
+        const notification = new Notification({
+            message :`Amount Associated with your Task ${Task.title} Done By @${completor.username} has been Funded back to you`,
+            gettime : Date.now() 
+        })
+        await notification.save();
+        const notification1 = new Notification({
+            message :`Bad Newz Task ${Task.title} which has been completed by you Is Wrong and is verified by the user @${user.username} and the Task Amount ${Task.original_amount} has been funded back to his account`,
+            gettime : Date.now() 
+        })
+        await notification1.save();
+
+        user.notifications.push(notification)
+        completor.notifications.push(notification1)
         await Task.save();
         await user.save();
-       
+        await completor.save();
 
         res.status(200).json({message : "Successfully Failed the task",success : true,task : Task});
 
@@ -324,16 +403,22 @@ app.get("/task/unverify/:taskid",async (req,res) => {
     }
 })
 
-
 app.post("/user/signup",async (req,res)=>{
 
     try {
         let {email,username,password} = req.body
         // console.log(email,username,password)
+        const notification = new Notification({
+            message : "Welcome To TaskWar Always Guarantee to issue Original Work to the Submitter. Free 100 Coins added to your Account",
+            gettime : Date.now() 
+        })
+        await notification.save();
+        
         const user1 = new User({
             email : email,
             username : username
         })
+        user1.notifications.push(notification);
         const registeredUser = await User.register(user1,password)
         req.login(registeredUser,(err)=>{
             if(err){
@@ -391,12 +476,14 @@ app.post('/user/login', (req, res, next) => {
         .populate("betsdone")
         .populate("betsgave")
         .populate("betstaken")
-        .populate("betsWinner");
+        .populate("betsWinner")
+        .populate("notifications");
         
   
       if (!user) {
         return res.status(404).json({ success: false, message: "User not found" });
       }
+      
   
       res.status(200).json({ success: true, user });
     } catch (err) {
@@ -404,6 +491,36 @@ app.post('/user/login', (req, res, next) => {
       res.status(500).json({ success: false, message: "Server error" });
     }
   });
+
+  app.get("/user/notifications",isAuthenticated, async (req, res) =>{
+    try {
+        const user = await User.findById(req.user._id)
+        .populate("notifications");
+        
+  
+      if (!user) {
+        return res.status(404).json({ success: false, message: "User not found" });
+      }
+      
+      // ✅ Update all notifications -> checkedByUser = true
+    await Notification.updateMany(
+        { _id: { $in: user.notifications } },
+        { $set: { checkedByUser: true } }
+      );
+  
+      // ✅ Re-fetch notifications after update
+      const updatedUser = await User.findById(req.user._id)
+        .populate({
+            path : "notifications",
+            options : {sort : {gettime : -1}}
+        });
+  
+      res.status(200).json({ success: true, notifications: updatedUser.notifications });
+    } catch (err) {
+      console.error("Error populating user:", err);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  })
   
   app.get("/user/:username",isAuthenticated,async (req,res) => {
      try{
@@ -420,6 +537,37 @@ app.post('/user/login', (req, res, next) => {
      }
   })
   
+  // Top Winners API
+app.get("/top-winners", async (req, res) => {
+    try {
+      const users = await User.find()
+        .populate("betsWinner") // betsWinner array ke andar Bet documents aa jayenge
+        .lean();
+  
+      const usersWithSum = users.map(user => {
+        const totalWinAmount = (user.betsWinner || []).reduce((sum, bet) => {
+          return sum + (bet.original_amount || 0); // Bet model ka field use kar rahe hain
+        }, 0);
+  
+        return {
+          _id: user._id,
+          username: user.username,
+          totalWinAmount
+        };
+      });
+  
+      const topUsers = usersWithSum
+        .sort((a, b) => b.totalWinAmount - a.totalWinAmount)
+        .slice(0, 10);
+  
+      res.json({ success: true, users: topUsers });
+    } catch (err) {
+      console.error("Error fetching top winners:", err);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  });
+  
+  
 app.get('/user/logout',isAuthenticated,(req,res)=>{
     req.logout((err)=>{
         if(err){
@@ -432,7 +580,9 @@ app.get('/user/logout',isAuthenticated,(req,res)=>{
         res.status(200).json({message : "Successfully Logged out",success : true})
     })
 })
-app.listen(3000,() => {
+
+const port = process.env.PORT || 3000;
+app.listen(port,() => {
     console.log('Server is running on port 3000');
 })
 

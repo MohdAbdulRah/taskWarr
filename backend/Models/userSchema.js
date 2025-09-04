@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose')
 const passportLocalMongoose = require("passport-local-mongoose")
 
@@ -33,6 +34,20 @@ const userSchema = new mongoose.Schema({
             type : mongoose.Schema.Types.ObjectId,
             ref : "Bet" 
         }
+    ],
+    notifications : [
+        {
+            type : mongoose.Schema.Types.ObjectId,
+            ref : "Notification" 
+            // message : {type : String},
+            // gettime : {type : Date},
+            // checkedByUser : {
+            //     type : Boolean,
+            //     default : false
+            // }
+            
+        }
+        
     ]
 })
 
