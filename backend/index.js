@@ -42,7 +42,7 @@ const app = express();
 
 
 app.use(cors({
-    origin: 'http://localhost:5173', 
+    origin: 'https://task-war-ep11.onrender.com', 
     // origin : true,
     credentials: true 
   }));
@@ -52,7 +52,7 @@ app.use(cors({
 // socket.io server
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "https://task-war-ep11.onrender.com",
     credentials: true
   }
 });
