@@ -91,18 +91,17 @@ store.on("error",()=>{
     console.log("Some Error",err)
 })
 const secretOptions = {
-    store,
-    secret: process.env.SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-     httpOnly: true,
-     secure: true,          // ✅ Render uses HTTPS, must be true
-     sameSite: "none"  
-    
-    }
-  };
+  store,
+  secret: process.env.SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    httpOnly: true,
+    secure: true,        // required for HTTPS (Render is always HTTPS)
+    sameSite: "none"     //  allow cross-site cookie sharing
+  }
+};
 app.set("trust proxy", 1);
 app.use(session(secretOptions))
 app.use(flash())
