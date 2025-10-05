@@ -3,7 +3,7 @@ import io from "socket.io-client";
 import { apiFetch } from "../utils/api";
 import { Send } from "lucide-react";
 
-const socket = io("http://localhost:3000", { withCredentials: true });
+const socket = io("https://taskwarr.onrender.com", { withCredentials: true });
 
 export default function Chat({ loggedInUser, preselectedReceiver }) {
   const [selectedUser, setSelectedUser] = useState(preselectedReceiver || "");
