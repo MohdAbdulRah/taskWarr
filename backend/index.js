@@ -97,9 +97,9 @@ const secretOptions = {
     saveUninitialized: false,
     cookie: {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      httpOnly: true,
-      secure: false,        // required for HTTPS (Render is always HTTPS)
-      sameSite: "lax"     //  allow cross-site cookie sharing
+     httpOnly: true,
+     secure: true,          // ✅ Render uses HTTPS, must be true
+     sameSite: "none"  
     
     }
   };
