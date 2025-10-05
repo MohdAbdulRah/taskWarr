@@ -11,6 +11,13 @@ import BetDetailsPage from './pages/BetDetailsPage';
 import BetCreate from './pages/BetCreate';
 import NotFound from './components/NotFound';
 import BetDoneForm from './pages/BetDoneForm';
+import AIChat from './pages/AIChat';
+import FileUpload from './components/FileUpload';
+import Chat from './pages/Chat';
+import ChatWrapper from './pages/ChatWrapper';
+import ChatsList from './pages/ChatsList';
+import ChatLayout from './pages/ChatLayout';
+
 
 const App = () => {
   return (
@@ -18,6 +25,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path='file' element={<FileUpload />} />
           <Route path="signup" element={<SignUp />} />
           <Route path="signin" element={<SignIn/>} />
           <Route
@@ -54,6 +62,30 @@ const App = () => {
               <BetDoneForm />
             </ProtectedRoute>
           } />
+          <Route path="/ask" element={
+            <ProtectedRoute>
+              <AIChat />
+            </ProtectedRoute>
+          } />
+         
+          {/* <Route path="/chats" element={
+            <ProtectedRoute>
+              <ChatLayout />
+            </ProtectedRoute>
+          } />
+          <Route path="/chat/:creatorId" element={
+            <ProtectedRoute>
+              <ChatLayout />
+            </ProtectedRoute>
+          } /> */}
+          <Route
+        path="/chats/:creatorId?"
+        element={
+          <ProtectedRoute>
+            <ChatLayout />
+          </ProtectedRoute>
+        }
+      />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

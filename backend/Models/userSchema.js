@@ -1,56 +1,55 @@
-
-const mongoose = require('mongoose')
-const passportLocalMongoose = require("passport-local-mongoose")
+const mongoose = require('mongoose');
+const passportLocalMongoose = require("passport-local-mongoose");
 
 const userSchema = new mongoose.Schema({
-    email : {
-        type : String,
-        required : true
+    email: {
+        type: String  
     },
-    balance : {
-        type : Number,
-        default : 100
+    mobile: {
+        type: String,
+        required: true,
+        unique: true  // ek hi mobile ek user ke liye
     },
-    betsdone : [
+    balance: {
+        type: Number,
+        default: 100
+    },
+    betsdone: [
         {
-            type : mongoose.Schema.Types.ObjectId,
-            ref : "Bet"
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Bet"
         }
     ],
-    betsgave : [
+    betsgave: [
         {
-            type : mongoose.Schema.Types.ObjectId,
-            ref : "Bet"
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Bet"
         }
     ],
-    betstaken : [
+    betstaken: [
         {
-            type : mongoose.Schema.Types.ObjectId,
-            ref : "Bet" 
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Bet" 
         }
     ],
-    betsWinner : [
+    betsWinner: [
         {
-            type : mongoose.Schema.Types.ObjectId,
-            ref : "Bet" 
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Bet" 
         }
     ],
-    notifications : [
+    notifications: [
         {
-            type : mongoose.Schema.Types.ObjectId,
-            ref : "Notification" 
-            // message : {type : String},
-            // gettime : {type : Date},
-            // checkedByUser : {
-            //     type : Boolean,
-            //     default : false
-            // }
-            
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Notification"
         }
-        
-    ]
-})
+    ],
+    badges: [{ type: String }],
+    level: { type: Number, default: 1 }
+});
 
+// yeh plugin password hash + salt add karega
 userSchema.plugin(passportLocalMongoose);
-const User = mongoose.model('User',userSchema);
+
+const User = mongoose.model('User', userSchema);
 module.exports = User;

@@ -29,7 +29,7 @@ const SignInForm = () => {
       });
   
       localStorage.setItem("user",username);
-      toast.success('Signup successful!');
+      toast.success('SignIn successful!');
       window.location.href ="/profile"
       console.log(data);
     } catch (err) {

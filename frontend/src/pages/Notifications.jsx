@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { apiFetch } from '../utils/api'
-import { Bell, PartyPopper, Handshake, AlertTriangle, CoinsIcon, UserIcon, IndianRupeeIcon, DollarSignIcon, GemIcon } from "lucide-react";
+import { Bell, PartyPopper, Handshake, AlertTriangle, CoinsIcon, UserIcon, IndianRupeeIcon, DollarSignIcon, GemIcon, MessageCircle, MessageCircleDashedIcon, MessageCircleIcon } from "lucide-react";
 
 const Notifications = () => {
   const [notifications,setNotifications] = useState([])
@@ -22,12 +22,13 @@ const Notifications = () => {
 
     const firstWord = message.split(" ")[0].toLowerCase();
 
-    if (firstWord === "task") return <Bell className="w-5 h-5 sm:w-7 sm:h-7 text-indigo-600" />;
+    if (firstWord === "task") return <Bell className="w-5 h-5 sm:w-7 sm:h-7 text-stone-600" />;
     if (firstWord === "welcome") return <Handshake className="w-5 h-5 sm:w-7 sm:h-7 text-blue-600" />;
     if (firstWord === "hurray") return <PartyPopper className="w-5 h-5 sm:w-7 sm:h-7 text-green-600" />;
     if (firstWord === "bad") return <AlertTriangle className="w-5 h-5 sm:w-7 sm:h-7 text-red-600" />;
-    if (firstWord === "your") return <UserIcon className="w-5 h-5 sm:w-7 sm:h-7 text-black-600" />;
+    if (firstWord === "your") return <UserIcon className="w-5 h-5 sm:w-7 sm:h-7 text-black" />;
     if (firstWord === "amount") return <GemIcon className="w-5 h-5 sm:w-7 sm:h-7 text-purple-600" />;
+    if (firstWord === "new") return <MessageCircleIcon className="w-5 h-5 sm:w-7 sm:h-7 text-yellow-600" />;
 
     return <Bell className="w-5 h-5 sm:w-7 sm:h-7 text-gray-600" />;
   };

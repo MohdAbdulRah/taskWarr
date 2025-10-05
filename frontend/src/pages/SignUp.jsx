@@ -4,16 +4,23 @@ import { apiFetch } from "../utils/api";
 
 const SignupForm = () => {
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [otp,setOtp] = useState("");
+  const [otpshow,setOtpShow] = useState(false)
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
   
-    if (!username || !email || !password) {
+    if (!username || !mobile || !password) {
       toast.error("Please fill all fields");
       return;
+    }
+    if(mobile.length != 10){
+       toast.error("Phone Number should be 10 digit number");
+       return;
     }
   
     setLoading(true); // Start loading
@@ -23,11 +30,12 @@ const SignupForm = () => {
         method: "POST",
         body: JSON.stringify({
           username,
-          email,
+          mobile,
+          otp,
           password,
         }),
       });
-      toast.success("Signup successful! Rs.100 Added to your Account Enjoy Tasks");
+      toast.success("Signup successful! Rs.100 Added to your Account Enjoy Tasks . Make a note of username to further login");
       await new Promise(resolve => setTimeout(resolve,1000));
       
       localStorage.setItem("user", username);
@@ -39,8 +47,38 @@ const SignupForm = () => {
       console.error(err);
     } finally {
       setLoading(false); // Stop loading regardless of success/failure
+      setOtpShow(false);
     }
   };
+
+  const handleOtp = async() => {
+    console.log("Send otp Was activated");
+    if(mobile == "" || mobile.length != 10){
+      toast.error("Please fill correct Mobile Number");
+      return;
+    }
+    setOtpShow(true);
+
+    try{
+      const data = await apiFetch("/auth/send-otp",{
+        method : "POST",
+        body: JSON.stringify({
+           mobile
+         
+        }),
+      })
+
+      if(data.success){
+        toast.success(data.message);
+      }
+      
+    }
+    catch(err){
+      toast.error(err.message);
+      console.error(err);
+    }
+    
+  }
   
 
   return (
@@ -65,16 +103,69 @@ const SignupForm = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">Email</label>
-            <input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm"
-            />
-          </div>
+          {/* Mobile Field */}
+<div className="mb-3">
+  <label className="block text-gray-700 font-medium mb-1">Mobile</label>
+  <input
+    type="text"
+    placeholder="78XXXXXX98"
+    value={mobile}
+    onChange={(e) => setMobile(e.target.value)}
+    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm"
+  />
+</div>
+
+{/* Send OTP Button */}
+<div className="mb-3">
+  <button
+    type="button"
+    onClick={handleOtp}
+    disabled={loading}
+    className={`w-full sm:w-auto px-6 py-3 rounded-xl font-semibold text-white transition duration-300 
+      ${loading ? "bg-green-300 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}
+    `}
+  >
+    {loading ? (
+      <svg
+        className="animate-spin h-5 w-5 mx-auto text-white"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        ></circle>
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v8z"
+        ></path>
+      </svg>
+    ) : (
+      "Send OTP"
+    )}
+  </button>
+</div>
+
+{/* OTP Input - Only show after clicking Send OTP */}
+{otpshow && (
+  <div className="mb-3">
+    <label className="block text-gray-700 font-medium mb-1">OTP</label>
+    <input
+      type="text"
+      placeholder="123456"
+      value={otp}
+      onChange={(e) => setOtp(e.target.value)}
+      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm"
+    />
+  </div>
+)}
+
 
           <div>
             <label className="block text-gray-700 font-medium mb-1">Password</label>

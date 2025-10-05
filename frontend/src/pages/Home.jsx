@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { apiFetch } from '../utils/api'
 import BetCard from '../components/BetCard'
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 export default function Home() {
   const [tasks, setTasks] = useState([])
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [topusers,setTopUsers] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     apiFetch('/task/all')
@@ -15,7 +17,7 @@ export default function Home() {
       })
       .catch(err => console.error('Error:', err.message))
 
-     apiFetch('/top-winners')
+     apiFetch('/top-winners-by-level')
      .then((data) => {
       setTopUsers(data.users)
      })
@@ -33,14 +35,43 @@ export default function Home() {
 
       {/* Main content */}
       <div className="relative z-10 p-4 max-w-6xl mx-auto">
-        <h1 className="text-white text-center text-4xl sm:text-6xl font-bold mb-2 drop-shadow-lg">
-          Current Bets
-        </h1>
+      <div className="flex items-center justify-between mb-6">
+  {/* Left side button (Hidden on Mobile) */}
+  <button
+    onClick={() => navigate('/ask')}
+    className="hidden sm:flex items-center gap-2 
+               bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 
+               hover:from-pink-600 hover:via-purple-600 hover:to-cyan-600
+               text-white font-bold px-5 py-2 rounded-full shadow-lg 
+               transition-all duration-300 ease-in-out transform hover:scale-105"
+  >
+    💬 Ask AI
+  </button>
+
+  {/* Heading centered */}
+  <h1 className="flex-1 text-white text-center text-4xl sm:text-6xl font-bold drop-shadow-lg">
+    Current Bets
+  </h1>
+
+  {/* Right side button (Hidden on Mobile) */}
+  <button
+    onClick={() => navigate('/chats')}
+    className="hidden sm:flex items-center gap-2 
+               bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500
+               hover:from-cyan-600 hover:via-purple-600 hover:to-pink-600
+               text-white font-bold px-5 py-2 rounded-full shadow-lg 
+               transition-all duration-300 ease-in-out transform hover:scale-105"
+  >
+    💌 Chats
+  </button>
+</div>
+
 
         <div className="h-1 w-32 mx-auto mb-4 rounded-full 
                         bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 
                         shadow-[0_0_15px_rgba(236,72,153,0.8)]"></div>
 
+       
         <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4 pb-14">
           {tasks.map((task, index) => (
             <BetCard key={index} bet={task} />
@@ -84,8 +115,9 @@ export default function Home() {
           </button>
           <h2 className="text-2xl font-bold mb-6">🏆 Leaderboard</h2>
           <ol className="space-y-3 list-decimal list-inside" >
+          <li className="flex justify-between text-black" key={1234}><span className='text-white'>Username</span> <span className='text-white'>Level</span></li>
             {topusers.map((user,index)=>{
-                 return <li className="flex justify-between text-black" key={index}><span>{index+1}. {user.username}</span> <span>{user.totalWinAmount}</span></li>
+                 return <li className="flex justify-between text-black" key={index}><span>{index+1}. {user.username}</span> <span>{user.level}</span></li>
             })}
           
           </ol>

@@ -1,11 +1,19 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const axios = require("axios");
 require('dotenv').config()
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const http = require("http");
+const { Server } = require("socket.io");
 const Bet = require("./Models/betSchema.js");
 const User = require("./Models/userSchema.js");
+const Otp = require("./Models/otpSchema.js")
+const Message = require("./Models/Message.js")
 const Notification = require("./Models/notificationSchema.js");
+
 const mongodb = process.env.MONGO_DB;
 const cors = require('cors');
+
 
 const session = require("express-session")
 const MongoStore = require('connect-mongo');
@@ -14,7 +22,7 @@ const passport = require("passport")
 const LocalStratergy = require("passport-local")
 
 const {isAuthenticated} = require("./Middleware/middlewares.js");
-const { forEach } = require('mongoose/lib/helpers/specialProperties.js');
+
 
 main()
 .then(() => {
@@ -25,12 +33,47 @@ main()
 async function main() {
   await mongoose.connect(mongodb);
 }
+
+
 const app = express();
+
+
+// yahan extra CORS dene ki zaroorat nahi
+
 
 app.use(cors({
     origin: 'http://localhost:5173', 
+    // origin : true,
     credentials: true 
   }));
+
+  const server = http.createServer(app);
+
+// socket.io server
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    credentials: true
+  }
+});
+  io.on("connection", (socket) => {
+    console.log("User connected:", socket.id);
+  
+    // join chat room
+    socket.on("join_room", (roomId) => {
+      socket.join(roomId);
+      console.log(`User joined room: ${roomId}`);
+    });
+  
+    // message bhejna aur receive karna
+    socket.on("send_message", (data) => {
+      io.to(data.roomId).emit("receive_message", data);
+    });
+  
+    socket.on("disconnect", () => {
+      console.log("User disconnected:", socket.id);
+    });
+  });
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -49,15 +92,18 @@ store.on("error",()=>{
 })
 const secretOptions = {
     store,
-    secret : process.env.SECRET,
-    resave : false,
-    saveUninitialized: true,
-    cookie : {
-        expires : Date.now() + 7*24*60*60*1000,
-        maxAge : 7*24*60*60*1000,
-        httpOnly : true
+    secret: process.env.SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      httpOnly: true,
+      secure: false,        // required for HTTPS (Render is always HTTPS)
+      sameSite: "lax"     //  allow cross-site cookie sharing
+    
     }
-}
+  };
+// app.set("trust proxy", 1);
 app.use(session(secretOptions))
 app.use(flash())
 
@@ -209,6 +255,22 @@ app.get("/task/accept/:taskid",isAuthenticated,async (req,res) => {
     }
 })
 
+app.post("/save/email",isAuthenticated,async (req,res) => {
+  const {email} = req.body;
+  try{
+    const user = req.user;
+    user.email = email;
+    await user.save();
+
+    res.status(200).json({success : true,message : "Email Saved Successfully",user : user});
+  }
+  catch(error){
+    return res.status(400).json({message : error.message || "Error in Saving the Email",success : false});
+  }
+
+
+})
+
 app.get("/task/refund/:taskid",isAuthenticated,async (req,res) => {
     try{
         const {taskid} = req.params;
@@ -305,6 +367,35 @@ app.post("/task/done/:taskid",isAuthenticated,async (req,res) => {
         res.status(400).json({message : error.message || "Error in Completing the Task Please try again later",success : false});
     }
 })
+const badgeMilestones = {
+  1: "Rookie",
+  5: "Beginner",
+  10: "Bronze",
+  25: "Silver",
+  50: "Gold",
+  100: "Diamond",
+  200: "Legend",
+};
+async function updateUserBadges(userId) {
+  const user = await User.findById(userId).populate("betsWinner");
+
+  if (!user) return null;
+
+  const betsCount = user.betsWinner.length;
+
+  // Level system (optional – 1 level per 10 bets)
+  user.level = Math.floor(betsCount / 10) + 1;
+
+  // Badge check
+  Object.keys(badgeMilestones).forEach((milestone) => {
+    if (user.level >= milestone && !user.badges.includes(badgeMilestones[milestone])) {
+      user.badges.push(badgeMilestones[milestone]);
+    }
+  });
+
+  await user.save();
+  return user;
+}
 
 app.get("/task/verify/:taskid",async (req,res) => {
     try{
@@ -348,6 +439,8 @@ app.get("/task/verify/:taskid",async (req,res) => {
         await Task.save();
         await completor.save();
        await user.save();
+
+       const updatedUser = await updateUserBadges(completor._id);
 
         res.status(200).json({message : "Successfully Done the task",success : true,task : Task});
 
@@ -403,28 +496,59 @@ app.get("/task/unverify/:taskid",async (req,res) => {
     }
 })
 
+app.post("/auth/send-otp", async (req, res) => {
+    const { mobile } = req.body;
+    if(mobile.length != 10){
+       return res.json({ success: false, message: "Invalid Mobile Number"}); 
+    }
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  
+    await Otp.create({
+      mobile,
+      otp,
+      expiresAt: Date.now() + 5 * 60 * 1000, // 5 min
+    });
+  
+    console.log(`OTP for ${mobile}: ${otp}`); // send via SMS gateway
+    // console.log("API KEY =>", process.env.FAST2SMS_API_KEY);
+    // const response = await axios.get(
+    //   `https://2factor.in/API/V1/${process.env.FAST2SMS_API_KEY}/SMS/${mobile}/${otp}/OTP1`
+    // );
+    // console.log(response.data);
+    res.json({ success: true, message: "OTP sent" });
+  });
+  
+
 app.post("/user/signup",async (req,res)=>{
 
     try {
-        let {email,username,password} = req.body
+        let {mobile,otp,username,password} = req.body
         // console.log(email,username,password)
+        const otpDoc = await Otp.findOne({ mobile, otp });
+        if (!otpDoc || otpDoc.expiresAt < Date.now()) {
+            return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
+        }
         const notification = new Notification({
             message : "Welcome To TaskWar Always Guarantee to issue Original Work to the Submitter. Free 100 Coins added to your Account",
             gettime : Date.now() 
         })
         await notification.save();
-        
+        const user = await User.findOne({mobile : mobile})
+        if(user){
+            return res.status(400).json({ success: false, message: "Mobile Already exists for a User" });
+        }
         const user1 = new User({
-            email : email,
+            mobile : mobile,
             username : username
         })
         user1.notifications.push(notification);
         const registeredUser = await User.register(user1,password)
+        await Otp.deleteMany({ mobile });
         req.login(registeredUser,(err)=>{
             if(err){
                 return next(err);
             }
-
+            
             res.status(200).json({message : "You are successfully signed up and logged In",success : true,user : registeredUser});
         })
        
@@ -567,6 +691,237 @@ app.get("/top-winners", async (req, res) => {
     }
   });
   
+  app.get("/top-winners-by-level", async (req, res) => {
+    try {
+      const users = await User.find()
+        .populate("betsWinner")
+        .select("username level betsWinner")
+        .lean();
+  
+      const usersWithScore = users.map(user => {
+        const totalWinAmount = (user.betsWinner || []).reduce((sum, bet) => {
+          return sum + (bet.original_amount || 0);
+        }, 0);
+  
+        return {
+          _id: user._id,
+          username: user.username,
+          level: user.level,
+          totalWinAmount
+        };
+      });
+  
+      // Sort: Level first, then totalWinAmount
+      const topUsers = usersWithScore
+        .sort((a, b) => {
+          if (b.level === a.level) {
+            return b.totalWinAmount - a.totalWinAmount; // tie → higher winnings
+          }
+          return b.level - a.level; // higher level first
+        })
+        .slice(0, 10);
+  
+      res.json({ success: true, users: topUsers });
+    } catch (err) {
+      console.error("Error fetching top winners by level:", err);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  });
+  
+  
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+  app.post("/ask", async (req, res) => {
+    try {
+      const { prompt, history } = req.body;
+      if (!prompt) return res.status(400).json({ error: "Missing prompt" });
+  
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash-preview-09-2025",
+      });
+  
+      // 🧠 1️⃣ Define the Task Coach persona/system prompt
+      const systemPrompt = `
+  You are "Task Coach", the official AI mentor of the productivity platform TaskWar.
+  Your tone is motivational, friendly, and energetic — like a gaming coach helping warriors conquer tasks.
+  You use fun metaphors (battle, victory, XP, focus energy) but also give practical productivity advice.
+  
+  Rules:
+  - Keep replies short (2–5 sentences).
+  - Always include one actionable suggestion or plan.
+  - Celebrate wins with energy (🔥🏆⚔️✅).
+  - If the user seems demotivated, encourage them with empathy.
+  - Avoid robotic tone, sound like a companion warrior or trainer.
+  - You can use light emojis sparingly to make chat lively.
+  `;
+  
+      // 🗂️ 2️⃣ Safely map history
+      const formattedHistory = Array.isArray(history)
+        ? history.map((h) => ({
+            role: h.role === "assistant" ? "model" : "user",
+            parts: [{ text: h.content || "" }],
+          }))
+        : [];
+  
+      // 🧩 3️⃣ Inject system prompt at the beginning of the history
+      formattedHistory.unshift({
+        role: "user", // Gemini doesn’t have "system", so we feed it as first "user" context
+        parts: [{ text: systemPrompt }],
+      });
+  
+      // 💬 4️⃣ Start chat session
+      const chat = model.startChat({
+        history: formattedHistory,
+        generationConfig: { maxOutputTokens: 500 },
+      });
+  
+      // 🎯 5️⃣ Send user’s message
+      const result = await chat.sendMessage(prompt);
+  
+      // 🧾 6️⃣ Parse response safely
+      let reply = "";
+      if (result?.response?.candidates?.length > 0) {
+        reply =
+          result.response.candidates[0].content?.parts
+            ?.map((p) => p?.text || "")
+            .join("\n") || "";
+      } else if (typeof result?.response?.text === "function") {
+        reply = result.response.text();
+      }
+  
+      reply = reply?.trim() || "Model did not return any response.";
+  
+      res.json({ reply });
+    } catch (error) {
+      console.error("GENAI ERROR:", error);
+      res.status(500).json({
+        error:
+          error.message ||
+          "Something went wrong while fetching AI response.",
+        fallback: "Please try again later.",
+      });
+    }
+  });
+  
+  app.post("/messages", async (req, res) => {
+    try {
+      const { sender, receiver, content, roomId } = req.body;
+  
+      if (!sender || !receiver || !content) {
+        return res.status(400).json({ error: "sender, receiver, and content are required" });
+      }
+  
+      // Save message
+      const message = new Message({
+        sender: new mongoose.Types.ObjectId(sender),
+        receiver: new mongoose.Types.ObjectId(receiver),
+        content,
+        roomId: roomId || null
+      });
+      await message.save();
+  
+      // Fetch sender details (username)
+      const senderUser = await User.findById(sender).select("username");
+  
+      // Create notification document
+      const notification = new Notification({
+        message: `New message from ${senderUser?.username || "Unknown"}`,
+        gettime: Date.now(),
+        checkedByUser: false
+      });
+      await notification.save();
+  
+      // Push notification reference into receiver's notifications
+      await User.findByIdAndUpdate(
+        receiver,
+        { $push: { notifications: notification._id } },
+        { new: true }
+      );
+  
+      res.json({ success: true, message });
+    } catch (error) {
+      console.error("Message Save Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  
+// GET all users except the logged-in user
+app.get("/all-users", isAuthenticated, async (req, res) => {
+  try {
+    const users = await User.find({ _id: { $ne: req.user._id } }).select("_id username");
+    res.status(200).json({ success: true, users });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Failed to fetch users" });
+  }
+});
+
+
+// Get chat between two users (or related to a task)
+app.get("/messages/:user1/:user2", async (req, res) => {
+  try {
+    const { user1, user2 } = req.params;
+
+    const messages = await Message.find({
+      $or: [
+        { sender: user1, receiver: user2 },
+        { sender: user2, receiver: user1 }
+      ]
+    }).sort({ createdAt: 1 }); // oldest first
+
+    res.json(messages);
+  } catch (error) {
+    console.error("Fetch messages error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get chat list (all users I have chatted with)
+app.get("/chat-list", async (req, res) => {
+  try {
+    const userId = req.user._id; // logged-in user
+
+    // Find all messages where I'm either sender or receiver
+    const messages = await Message.find({
+      $or: [
+        { sender: userId },   // I sent
+        { receiver: userId }  // I received
+      ]
+    })
+      .sort({ createdAt: -1 })
+      .populate("sender", "username")
+      .populate("receiver", "username");
+
+    const chatUsers = [];
+    const seen = new Set();
+
+    messages.forEach(msg => {
+      let other;
+      // If I am sender → other = receiver
+      if (msg.sender._id.toString() === userId.toString()) {
+        other = msg.receiver;
+      } 
+      // If I am receiver → other = sender
+      else {
+        other = msg.sender;
+      }
+
+      if (!seen.has(other._id.toString())) {
+        seen.add(other._id.toString());
+        chatUsers.push(other);
+      }
+    });
+
+    res.json({ success: true, users: chatUsers });
+  } catch (err) {
+    console.error("Chat list error:", err);
+    res.status(500).json({ success: false, error: "Failed to fetch chat list" });
+  }
+});
+
+
+
   
 app.get('/user/logout',isAuthenticated,(req,res)=>{
     req.logout((err)=>{
@@ -582,7 +937,7 @@ app.get('/user/logout',isAuthenticated,(req,res)=>{
 })
 
 const port = process.env.PORT || 3000;
-app.listen(port,() => {
+server.listen(port,() => {
     console.log('Server is running on port 3000');
 })
 

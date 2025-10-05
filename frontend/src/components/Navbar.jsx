@@ -173,6 +173,20 @@ const Navbar = () => {
                 >
                   📝 Create Task
                 </NavLink>
+                <NavLink
+                  to="/ask"
+                  onClick={toggleMenu}
+                  className="flex items-center gap-3 text-blue-600 font-medium hover:text-blue-800"
+                >
+                  🤖 Ask AI
+                </NavLink>
+                <NavLink
+                  to="/chats"
+                  onClick={toggleMenu}
+                  className="flex items-center gap-3 text-blue-600 font-medium hover:text-blue-800"
+                >
+                  💬 Chats
+                </NavLink>
 
                 <NavLink
                   to="/notifications"

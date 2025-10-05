@@ -15,7 +15,8 @@ const BetCreate = () => {
       });
       if (result.success) {
         toast.success('Bet created successfully!');
-        navigate("/profile");
+        // navigate("/profile");
+        window.location.href = "/profile"
       } else {
         toast.error(result.message || "Failed to create bet");
       }
