@@ -103,7 +103,7 @@ const secretOptions = {
     
     }
   };
-// app.set("trust proxy", 1);
+app.set("trust proxy", 1);
 app.use(session(secretOptions))
 app.use(flash())
 
