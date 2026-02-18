@@ -1,19 +1,137 @@
-Project Name: Task War
+🚀 TaskWar
 
-Description: Task War is an interactive web platform that gamifies task management and productivity by allowing users to earn points and rewards. Users can complete tasks to earn points, which can later be redeemed or used to unlock benefits. The platform includes leaderboards to foster friendly competition among users, motivating them to stay productive and engaged.
+TaskWar is a community-driven task management and gamification platform.
+Users can create tasks, assign rewards, and others can complete those tasks to earn points.
+It makes productivity fun, competitive, and rewarding with leaderboards, badges, and achievements.
 
-Key features:
+✨ Features
 
-Earn Points: Users gain points for completing tasks successfully.
+📝 Task Creation – Create tasks with descriptions, deadlines, and reward points.
 
-Task Creation: Users can create tasks for themselves or for others, contributing to a collaborative task ecosystem.
+🎯 Task Completion – Complete tasks and earn points.
 
-Leaderboards: Track top-performing users based on points earned, promoting motivation and competition.
+🏆 Gamification – Leaderboards, achievements, and levels for active users.
 
-Task Categories & Deadlines: Organize tasks by priority, category, or due date for better management.
+👥 Profiles – Track created & completed tasks, badges, and points.
 
-Rewards & Incentives: Points can translate into rewards, badges, or other incentives to increase user engagement.
+🔔 Notifications – Stay updated on assigned and completed tasks.
 
-Idea in a nutshell: Task War turns task management into a gamified experience, where productivity is rewarded, collaboration is encouraged, and users can compete to reach the top of the leaderboard.
+🔒 Secure – Authentication and role-based access.
 
-Live Url :- https://task-war-ep11.onrender.com
+🛠️ Tech Stack
+Frontend
+
+React (or Next.js)
+
+TailwindCSS / Shadcn UI
+
+Axios (API calls)
+
+Backend
+
+Node.js + Express
+
+MongoDB (Atlas)
+
+JWT Authentication
+
+CORS & Security Middleware
+
+Deployment
+
+Frontend: Render (Static Site)
+
+Backend: Render (Web Service)
+
+Database: MongoDB Atlas
+
+📂 Project Structure
+/project-root
+│── /backend          # Express server + MongoDB
+│    ├── node_modules
+│    ├── .env
+│    ├── server.js
+│    └── ...
+│
+│── /frontend         # React/Next.js frontend
+│    ├── node_modules
+│    ├── .env
+│    ├── src/
+│    └── ...
+│
+│── .gitignore
+│── README.md
+└── ...
+
+⚡ Getting Started
+1️⃣ Clone the repo
+git clone https://github.com/your-username/taskwar.git
+cd taskwar
+
+2️⃣ Backend Setup
+cd backend
+npm install
+
+
+Create .env file inside backend/
+
+PORT=5000
+MONGO_URI=your_mongo_url
+JWT_SECRET=your_secret_key
+
+
+Run the backend:
+
+npm start
+
+3️⃣ Frontend Setup
+cd ../frontend
+npm install
+
+
+Create .env file inside frontend/
+
+REACT_APP_API_URL=http://localhost:5000
+
+
+Run the frontend:
+
+npm start
+
+🌐 Deployment
+
+Frontend: Deploy as a Static Site on Render
+
+Backend: Deploy as a Web Service on Render
+
+Update frontend .env.production with:
+
+REACT_APP_API_URL=https://your-backend.onrender.com
+
+LIVE URL :-  https://task-war-ep11.onrender.com
+
+🎯 Future Enhancements
+
+✅ Points → Rewards Store
+
+✅ Task categories & filters
+
+✅ AI-powered task recommendations
+
+✅ Real-time chat for collaboration
+
+🤝 Contributing
+
+Contributions are welcome! 🎉
+
+Fork the repo
+
+Create a new branch
+
+Commit your changes
+
+Submit a pull request
+
+📜 License
+
+This project is licensed under the MIT License.
